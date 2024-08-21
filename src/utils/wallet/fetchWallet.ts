@@ -1,5 +1,4 @@
 // @ts-nocheck
-
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
 import { CHAINS, ChainsID } from 'src/constants';
@@ -83,7 +82,7 @@ export const fetchWallet = (
         allowance: 0,
       };
 
-      console.log('graphAccount', graphAccount);
+      // console.log('graphAccount', graphAccount);
 
       if (graphAccount) {
         if (graphAccount.balances[0]?.amount)
@@ -108,11 +107,10 @@ export const fetchWallet = (
         // }
       }
 
-      // console.log('account', account);
+      // // console.log('account', account);
 
       resolve(account);
     } catch (err) {
-      console.log(err);
       reject(err);
     }
   });

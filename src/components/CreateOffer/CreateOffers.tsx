@@ -52,7 +52,7 @@ const approveOffer = (
       );
 
       if (!offerToken) {
-        console.log('offerToken not found');
+        // console.log('offerToken not found');
         return;
       }
 
@@ -64,9 +64,9 @@ const approveOffer = (
         .plus(new BigNumber(oldAllowance.toString()))
         .toString(10);
 
-      console.log('amountInWei: ', amountToApprove.toString());
-      console.log('oldAllowance: ', oldAllowance.toString());
-      console.log('amountInWeiToPermit: ', amountInWeiToPermit);
+      // console.log('amountInWei: ', amountToApprove.toString());
+      // console.log('oldAllowance: ', oldAllowance.toString());
+      // console.log('amountInWeiToPermit: ', amountInWeiToPermit);
 
       // TokenType = 3: ERC20 Without Permit, do Approve/CreateOffer
       BigNumber.set({ EXPONENTIAL_AT: 35 });
@@ -124,7 +124,7 @@ export const CreateOffer = () => {
     state.approvals, 
     state.resetApprovals
   ]);
-  console.log('approvals', approvals);
+  // console.log('approvals', approvals);
 
   const { t } = useTranslation('modals', { keyPrefix: 'sell' });
 
@@ -168,17 +168,17 @@ export const CreateOffer = () => {
   };
   
   const createOffers = async () => {
-    console.log('createOffers');
+    // console.log('createOffers');
 
     try {
       if (!account || !provider || !realTokenYamUpgradeable) return;
 
       setLoading(true);
 
-      console.log(offers);
+      // console.log(offers);
 
       if (offers.length == 1) {
-        console.log('length=1');
+        // console.log('length=1');
         const offer = offers[0];
 
         const offerToken = getContract<CoinBridgeToken>(
@@ -211,7 +211,7 @@ export const CreateOffer = () => {
         let permitAnswer: any | undefined = undefined;
         let needPermit = false;
         if (offerTokenType == 1 && !isSafe) {
-          console.log(
+          // console.log(
             'coinBridgeTokenPermitSignature',
             account,
             realTokenYamUpgradeable.address,
@@ -231,7 +231,7 @@ export const CreateOffer = () => {
           );
         } else if (offerTokenType == 2 && !isSafe) {
           // TokenType = 2: ERC20 With Permit
-          console.log('erc20PermitSignature');
+          // console.log('erc20PermitSignature');
           needPermit = true;
           permitAnswer = await erc20PermitSignature(
             account,
@@ -242,7 +242,7 @@ export const CreateOffer = () => {
             provider
           );
         } else if (offerTokenType == 3 || isSafe) {
-          console.log('approveOffer');
+          // console.log('approveOffer');
           await approveOffer(
             offer.offerTokenAddress,
             new BigNumber(offer.amount),
@@ -254,18 +254,18 @@ export const CreateOffer = () => {
           );
         }
 
-        console.log('pass2');
+        // console.log('pass2');
 
         if (needPermit && !permitAnswer) {
           setLoading(false);
           return;
         }
 
-        console.log('pass permitAnswer');
+        // console.log('pass permitAnswer');
 
         let createOfferTx;
         if ((offerTokenType == 1 || offerTokenType == 2) && !isSafe) {
-          console.log(
+          // console.log(
             'Type 1 or 2 and is not safe',
             JSON.stringify(permitAnswer, null, 4)
           );
@@ -283,7 +283,7 @@ export const CreateOffer = () => {
             s
           );
         } else {
-          console.log('TEST 1');
+          // console.log('TEST 1');
           createOfferTx = await realTokenYamUpgradeable.createOffer(
             offer.offerTokenAddress,
             offer.buyerTokenAddress,
@@ -293,7 +293,7 @@ export const CreateOffer = () => {
           );
         }
 
-        console.log('pass3');
+        // console.log('pass3');
 
         if (!createOfferTx) {
           setLoading(false);
@@ -310,7 +310,7 @@ export const CreateOffer = () => {
           NOTIFICATIONS[NotificationsID.createOfferLoading](notificationPayload)
         );
 
-        console.log('pass4');
+        // console.log('pass4');
 
         createOfferTx.wait()
           .then(({ status }) => {
@@ -323,7 +323,7 @@ export const CreateOffer = () => {
             );
 
             if (status == 1) {
-              console.log('test1')
+              // console.log('test1')
               resetOffers()
               refreshOffers();
             }
@@ -359,7 +359,7 @@ export const CreateOffer = () => {
           if (!createdOffer.amount || !createdOffer.price) return;
 
           if (!offerToken) {
-            console.log('offerToken not found');
+            // console.log('offerToken not found');
             return;
           }
 
@@ -376,7 +376,7 @@ export const CreateOffer = () => {
           _amounts.push(new BigNumber(createdOffer.amount).toString(10));
         }
 
-        console.log(_offerTokens, _buyerTokens, _buyers, _prices, _amounts);
+        // console.log(_offerTokens, _buyerTokens, _buyers, _prices, _amounts);
 
         const createBatchOffersTx =
           await realTokenYamUpgradeable.createOfferBatch(
@@ -407,7 +407,7 @@ export const CreateOffer = () => {
           );
 
           if (status == 1) {
-            console.log('test2')
+            // console.log('test2')
             resetOffers()
             refreshOffers();
           }
@@ -415,7 +415,7 @@ export const CreateOffer = () => {
         });
       }
     } catch (err) {
-      console.log('Error when sending createBatch tx: ', err);
+      // console.log('Error when sending createBatch tx: ', err);
       setLoading(false);
       setNotification(true);
     }
@@ -423,7 +423,7 @@ export const CreateOffer = () => {
 
   const createBatchOffer = async () => {
 
-    console.log('createBatchOffer');
+    // console.log('createBatchOffer');
 
     try{
       if (!account || !provider || !realTokenYamUpgradeable){
@@ -459,7 +459,7 @@ export const CreateOffer = () => {
         if (!createdOffer.amount || !createdOffer.price) return;
 
         if (!offerToken) {
-          console.log('offerToken not found');
+          // console.log('offerToken not found');
           return;
         }
 
@@ -476,7 +476,7 @@ export const CreateOffer = () => {
         _amounts.push(new BigNumber(createdOffer.amount).toString(10));
       }
 
-      console.log(_offerTokens, _buyerTokens, _buyers, _prices, _amounts);
+      // console.log(_offerTokens, _buyerTokens, _buyers, _prices, _amounts);
 
       const createBatchOffersTx =
         await realTokenYamUpgradeable.createOfferBatch(
@@ -507,7 +507,7 @@ export const CreateOffer = () => {
         );
 
         if (status == 1) {
-          console.log('test2')
+          // console.log('test2')
           resetOffers()
           refreshOffers();
           resetApprovals();

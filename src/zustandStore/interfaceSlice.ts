@@ -1,23 +1,26 @@
-import { StateCreator } from "zustand";
-import { RootStore } from "./store";
-import { OFFER_LOADING, Offer } from "../types/offer";
-import { PropertiesToken } from "../types";
-import { Price } from "../types/price";
-import { fetchOffersTheGraph } from "../utils/offers/fetchOffers";
-import { JsonRpcProvider, Web3Provider } from "@ethersproject/providers";
-import { CHAINS, ChainsID } from "../constants";
-import { apiClient } from "../utils/offers/getClientURL";
-import { gql } from "@apollo/client";
-import { getRightAllowBuyTokens } from "../hooks/useAllowedTokens";
-import { AllowedToken } from "../types/allowedTokens";
-import { getPrice } from "../utils/price";
-import { Price as P } from "src/utils/price";
-import { fetchOffer } from "../utils/offers/fetchOffer";
-import { Historic } from "../types/historic";
-import { parseHistoric } from "../utils/historic/historic";
-import { reject } from "lodash";
-import { UserBalances } from "../types/UserBalance";
-import BigNumber from "bignumber.js";
+import { gql } from '@apollo/client';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
+
+import BigNumber from 'bignumber.js';
+import { reject } from 'lodash';
+import { StateCreator } from 'zustand';
+
+import { Price as P } from 'src/utils/price';
+
+import { CHAINS, ChainsID } from '../constants';
+import { getRightAllowBuyTokens } from '../hooks/useAllowedTokens';
+import { PropertiesToken } from '../types';
+import { UserBalances } from '../types/UserBalance';
+import { AllowedToken } from '../types/allowedTokens';
+import { Historic } from '../types/historic';
+import { OFFER_LOADING, Offer } from '../types/offer';
+import { Price } from '../types/price';
+import { parseHistoric } from '../utils/historic/historic';
+import { fetchOffer } from '../utils/offers/fetchOffer';
+import { fetchOffersTheGraph } from '../utils/offers/fetchOffers';
+import { apiClient } from '../utils/offers/getClientURL';
+import { getPrice } from '../utils/price';
+import { RootStore } from './store';
 
 export interface InterfaceSlice {
   account: string;
@@ -75,25 +78,25 @@ export interface InterfaceSlice {
 
 export const createInterfaceSlice: StateCreator<
   RootStore,
-  [["zustand/subscribeWithSelector", never], ["zustand/devtools", never]],
+  [['zustand/subscribeWithSelector', never], ['zustand/devtools', never]],
   [],
   InterfaceSlice
 > = (set, get) => {
   return {
-    account: "",
+    account: '',
     setAccount: (account: string) => set({ account }),
 
     chainId: 1,
     setChainId: (chainId: number) => set({ chainId }),
 
     getProvider: (): JsonRpcProvider => {
-      try{
+      try {
         const { chainId } = get();
         const rpcUrl = CHAINS[chainId as ChainsID].rpcUrl;
         return new JsonRpcProvider(rpcUrl);
-      }catch(err){
-        console.log('Failed to get provider: ', err)
-      }finally{
+      } catch (err) {
+        // console.log('Failed to get provider: ', err)
+      } finally {
         return new JsonRpcProvider(CHAINS[ChainsID.Gnosis].rpcUrl);
       }
     },
@@ -102,34 +105,43 @@ export const createInterfaceSlice: StateCreator<
     setTheGraphIssue: (theGraphHasIssue: boolean) => set({ theGraphHasIssue }),
 
     interfaceIsLoading: true,
-    setInterfaceIsLoading: (interfaceIsLoading: boolean) => set({ interfaceIsLoading }),
+    setInterfaceIsLoading: (interfaceIsLoading: boolean) =>
+      set({ interfaceIsLoading }),
 
     abortController: new AbortController(),
     refreshInterfaceDatas: (): Promise<void> => {
       return new Promise<void>(async (resolve, reject) => {
         // try{
-          const { 
-            chainId, account, getProvider, setInterfaceIsLoading,
-            fetchAddressWlProperties, fetchProperties, fetchPrices,  fetchUserBalances 
-          } = get();
-          setInterfaceIsLoading(true);
-    
-          const provider = getProvider()
+        const {
+          chainId,
+          account,
+          getProvider,
+          setInterfaceIsLoading,
+          fetchAddressWlProperties,
+          fetchProperties,
+          fetchPrices,
+          fetchUserBalances,
+        } = get();
+        setInterfaceIsLoading(true);
 
-          // await Promise.allSettled([
-          //   fetchProperties(chainId),
-          //   fetchAddressWlProperties(account, chainId),
-          //   fetchPrices(chainId,provider),
-          //   fetchUserBalances()
-          // ]);
-    
-          await fetchProperties(chainId);
-          await fetchAddressWlProperties(account, chainId);
-          await fetchPrices(chainId).catch(err => console.error('Failed to fetch prices: ', err));
-          await fetchUserBalances()
+        const provider = getProvider();
 
-          setInterfaceIsLoading(false);
-          resolve();
+        // await Promise.allSettled([
+        //   fetchProperties(chainId),
+        //   fetchAddressWlProperties(account, chainId),
+        //   fetchPrices(chainId,provider),
+        //   fetchUserBalances()
+        // ]);
+
+        await fetchProperties(chainId);
+        await fetchAddressWlProperties(account, chainId);
+        await fetchPrices(chainId).catch((err) =>
+          console.error('Failed to fetch prices: ', err)
+        );
+        await fetchUserBalances();
+
+        setInterfaceIsLoading(false);
+        resolve();
 
         // }catch(err){
         //   reject(err);
@@ -137,37 +149,39 @@ export const createInterfaceSlice: StateCreator<
       });
     },
     refreshInterface: async () => {
-      try{
-
-        const { fetchOffers, fetchHistorics, setInterfaceIsLoading, refreshInterfaceDatas, abortController } = get();
+      try {
+        const {
+          fetchOffers,
+          fetchHistorics,
+          setInterfaceIsLoading,
+          refreshInterfaceDatas,
+          abortController,
+        } = get();
 
         abortController.abort();
 
-        set({ abortController: new AbortController() })
-        
+        set({ abortController: new AbortController() });
+
         setInterfaceIsLoading(true);
-  
+
         await refreshInterfaceDatas();
-  
-        await Promise.all([
-          fetchOffers(),
-          fetchHistorics()
-        ]);
+
+        await Promise.all([fetchOffers(), fetchHistorics()]);
         setInterfaceIsLoading(false);
-      }catch(err){
+      } catch (err) {
         console.error('Error while refreshing interface: ', err);
       }
     },
     refreshOffers: async () => {
-      try{
+      try {
         const { fetchOffers, setInterfaceIsLoading } = get();
         setInterfaceIsLoading(true);
-  
+
         await fetchOffers();
-  
+
         setInterfaceIsLoading(false);
-      }catch(err){
-        console.error(err)
+      } catch (err) {
+        console.error(err);
       }
     },
 
@@ -175,7 +189,6 @@ export const createInterfaceSlice: StateCreator<
     userBalancesAreLoading: true,
     fetchUserBalances: (): Promise<void> => {
       return new Promise<void>(async (resolve, reject) => {
-
         const { account } = get();
 
         const chainDatas = CHAINS[get().chainId as ChainsID];
@@ -193,35 +206,54 @@ export const createInterfaceSlice: StateCreator<
                 }
               }
             }
-          `
+          `,
         });
 
         const balances = res.data[prefix].accountBalances;
-        console.log('USER BALANCES: ', balances);
+        // console.log('USER BALANCES: ', balances);
 
         const userBalances: UserBalances = {};
         balances.forEach((balance: any) => {
-          userBalances[balance.token.address.toLowerCase()] = new BigNumber(balance.amount);
+          userBalances[balance.token.address.toLowerCase()] = new BigNumber(
+            balance.amount
+          );
         });
 
         set({ userBalances, userBalancesAreLoading: false });
 
         resolve();
-
       });
     },
 
     fetchOffers: async () => {
       set({ offersAreLoading: true });
 
-      const { prices, properties, wlProperties, account, chainId, setTheGraphIssue } = get();
+      const {
+        prices,
+        properties,
+        wlProperties,
+        account,
+        chainId,
+        setTheGraphIssue,
+      } = get();
 
       let offersData;
-      if ((chainId == 1 || chainId == 100 || chainId == 5) && wlProperties && prices) {
+      if (
+        (chainId == 1 || chainId == 100 || chainId == 5) &&
+        wlProperties &&
+        prices
+      ) {
         //offersData = await fetchOfferTheGraph(chainId,properties);
-        offersData = await fetchOffersTheGraph(account,chainId, properties, wlProperties, prices, setTheGraphIssue);
+        offersData = await fetchOffersTheGraph(
+          account,
+          chainId,
+          properties,
+          wlProperties,
+          prices,
+          setTheGraphIssue
+        );
       }
-  
+
       set({ offers: offersData, offersAreLoading: false });
     },
     // askForRefresh: false,
@@ -231,26 +263,27 @@ export const createInterfaceSlice: StateCreator<
     privateOffers: [],
 
     fetchProperties: async (chainId: number) => {
-      const { abortController } = get(); 
+      const { abortController } = get();
       try {
-        const response = await fetch(`/api/properties/${chainId}`, { signal: abortController.signal });
+        const response = await fetch(`/api/properties/${chainId}`, {
+          signal: abortController.signal,
+        });
         if (response.ok) {
           const responseJson: PropertiesToken[] = await response.json();
           set({ properties: responseJson, propertiesAreLoading: false });
         }
       } catch (err) {
-        console.log('Failed to load properties from API: ', err);
+        // console.log('Failed to load properties from API: ', err);
       }
     },
     properties: [],
     propertiesAreLoading: true,
 
     fetchAddressWlProperties: async (address: string, chainId: number) => {
-      const { abortController } = get(); 
-      try{
-     
+      const { abortController } = get();
+      try {
         const prefix = CHAINS[chainId as ChainsID].graphPrefixes.realtoken;
-        
+
         const { data } = await apiClient.query({
           query: gql`
             query getWlProperties{
@@ -270,29 +303,30 @@ export const createInterfaceSlice: StateCreator<
           `,
           context: {
             fetchOptions: {
-              signal: abortController.signal
-            }
-          }
+              signal: abortController.signal,
+            },
+          },
         });
 
-        console.log('WL: ', data[prefix]?.account)
-  
+        // console.log('WL: ', data[prefix]?.account)
+
         const userIds = data[prefix]?.account?.userIds;
-  
+
         let wlTokenIds: string[] | undefined = undefined;
-        if(userIds){
+        if (userIds) {
           wlTokenIds = userIds[0].attributeKeys;
         }
 
-        set({ 
-          wlProperties: wlTokenIds ? wlTokenIds.map(str => parseInt(str)) : [],
-          wlPropertiesAreLoading: false
+        set({
+          wlProperties: wlTokenIds
+            ? wlTokenIds.map((str) => parseInt(str))
+            : [],
+          wlPropertiesAreLoading: false,
         });
-        
-        console.log('FINISH TO FETCH WL ADDRESSE PROPERTIES')
-        
-      } catch(err){
-        console.log("Failed to fetch wl properties for connected address.", err)
+
+        // console.log('FINISH TO FETCH WL ADDRESSE PROPERTIES')
+      } catch (err) {
+        // console.log("Failed to fetch wl properties for connected address.", err)
       }
     },
     wlProperties: undefined,
@@ -301,30 +335,32 @@ export const createInterfaceSlice: StateCreator<
     fetchPrices: (chainId): Promise<void> => {
       const { abortController } = get();
       return new Promise<void>(async (resolve, reject) => {
-        try{
-
+        try {
           const abortListener = ({ target }: { target: any }) => {
             abortController.signal.removeEventListener('abort', abortListener);
             reject(target.reason);
-          }
+          };
           abortController.signal.addEventListener('abort', abortListener);
 
-          // console.log('FETCH PRICES')
-  
+          // // console.log('FETCH PRICES')
+
           const tokens = getRightAllowBuyTokens(chainId);
-          const p = await Promise.all(tokens.map((allowedToken: AllowedToken) => getPrice(allowedToken)));
-    
+          const p = await Promise.all(
+            tokens.map((allowedToken: AllowedToken) => getPrice(allowedToken))
+          );
+
           const prices: Price = {};
-          p.forEach((p: P) => prices[p.contractAddress.toLowerCase()] = p.price);
-  
+          p.forEach(
+            (p: P) => (prices[p.contractAddress.toLowerCase()] = p.price)
+          );
+
           set({
             prices: prices,
-            pricesAreLoading: false
+            pricesAreLoading: false,
           });
 
           resolve();
-         
-        }catch(err){
+        } catch (err) {
           console.error(err);
           reject(err);
         }
@@ -339,19 +375,18 @@ export const createInterfaceSlice: StateCreator<
     fetchHistorics: (): Promise<void> => {
       const { chainId, account, abortController } = get();
       return new Promise<void>(async (resolve, reject) => {
-        try{
-
+        try {
           const abortListener = ({ target }: { target: any }) => {
             abortController.signal.removeEventListener('abort', abortListener);
             reject(target.reason);
-          }
+          };
           abortController.signal.addEventListener('abort', abortListener);
 
+          // console.log('FETCH HISTORICS')
 
-          console.log('FETCH HISTORICS')
-  
-          const graphNetworkPrefix = CHAINS[chainId as ChainsID].graphPrefixes.yam;
-  
+          const graphNetworkPrefix =
+            CHAINS[chainId as ChainsID].graphPrefixes.yam;
+
           // GET LAST PURCHASES
           const { data } = await apiClient.query({
             query: gql`
@@ -370,21 +405,22 @@ export const createInterfaceSlice: StateCreator<
                   } 
                 }
               }
-            `
+            `,
           });
 
-          if(data.yamGnosis.purchases.length == 0){
+          if (data.yamGnosis.purchases.length == 0) {
             throw new Error('No purchases found');
           }
-  
+
           const lastPurchase = data.yamGnosis.purchases[0].createdAtTimestamp;
-          // console.log('LAST PURCHASE: ', lastPurchase)
-  
+          // // console.log('LAST PURCHASE: ', lastPurchase)
+
           const historics = [];
-          let timestamp = lastPurchase+1;
-          while(true){
-            // console.log(historics.length, timestamp)
-            const { data } = await apiClient.query({query: gql`
+          let timestamp = lastPurchase + 1;
+          while (true) {
+            // // console.log(historics.length, timestamp)
+            const { data } = await apiClient.query({
+              query: gql`
               query getHistorics{
                 ${graphNetworkPrefix} {
                   purchases(where: { 
@@ -417,37 +453,36 @@ export const createInterfaceSlice: StateCreator<
                   }
                 }
               }
-            `});
-  
+            `,
+            });
+
             const purchases = data[graphNetworkPrefix].purchases;
-            // console.log('PURCHASES: ', purchases.length)
-  
-            if(purchases.length == 0) break;
-  
+            // // console.log('PURCHASES: ', purchases.length)
+
+            if (purchases.length == 0) break;
+
             const historic: Historic[] | undefined = parseHistoric(purchases);
-            if(historic) {
+            if (historic) {
               historics.push(...historic);
-              timestamp = purchases[purchases.length-1].createdAtTimestamp;
+              timestamp = purchases[purchases.length - 1].createdAtTimestamp;
             }
-  
           }
-  
-          console.log('FINISH TO FETCH HISTORICS: ', historics.length);
-  
-          set({ 
+
+          // console.log('FINISH TO FETCH HISTORICS: ', historics.length);
+
+          set({
             historics: historics,
             // historics: [],
             historicsAreLoading: false,
-            historicHasLoadingError: false
+            historicHasLoadingError: false,
           });
 
           resolve();
-  
-        }catch(err){
+        } catch (err) {
           console.error('Failed to fetch historics: ', err);
-          set({ historicHasLoadingError: true })
+          set({ historicHasLoadingError: true });
         }
       });
-    }
+    },
   };
 };

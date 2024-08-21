@@ -1,5 +1,7 @@
 import type { Web3Provider } from '@ethersproject/providers';
+
 import { Contract, utils } from 'ethers';
+
 import { gnosisAllowedTokens } from '../constants/allowedBuyTokens';
 
 // This function is used for general tokens with permit function
@@ -13,7 +15,10 @@ const erc20PermitSignature = async (
 ) => {
   try {
     let nonce;
-    if (contract.address.toLowerCase() == gnosisAllowedTokens[2].contractAddress.toLowerCase()) {
+    if (
+      contract.address.toLowerCase() ==
+      gnosisAllowedTokens[2].contractAddress.toLowerCase()
+    ) {
       nonce = await contract._nonces(owner);
     } else {
       nonce = await contract.nonces(owner);
@@ -23,21 +28,20 @@ const erc20PermitSignature = async (
     try {
       version = await contract.version();
     } catch (e) {
-      console.log('No version function in contract.', e)
+      // console.log('No version function in contract.', e)
       try {
         version = await contract.VERSION();
       } catch (e) {
-        console.log('No VERSION function in contract.', e)
+        // console.log('No VERSION function in contract.', e)
         try {
           version = await contract.EIP712_REVISION();
         } catch (e) {
-          console.log('No EIP712_REVISION function in contract.', e)
-          throw Error("Cannot get permit version from contract.");
+          // console.log('No EIP712_REVISION function in contract.', e)
+          throw Error('Cannot get permit version from contract.');
         }
       }
     }
     version = 2;
-
 
     const contractName = await contract.name();
     const rightVersion = version;
@@ -69,7 +73,6 @@ const erc20PermitSignature = async (
       nonce: nonce.toHexString(),
       deadline: transactionDeadline,
     };
-
 
     // eslint-disable-next-line object-shorthand
     const data = JSON.stringify({

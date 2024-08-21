@@ -1,5 +1,7 @@
 import type { Web3Provider } from '@ethersproject/providers';
+
 import { Contract, utils } from 'ethers';
+
 import { gnosisAllowedTokens } from '../constants/allowedBuyTokens';
 
 // This function is used for general tokens with permit function
@@ -15,36 +17,38 @@ const erc20PermitSignature = async (
     // const transactionDeadline = Date.now() + 3600; // permit valable during 1h
 
     let nonce;
-    if(contract.address.toLowerCase() == gnosisAllowedTokens[2].contractAddress.toLowerCase()){
+    if (
+      contract.address.toLowerCase() ==
+      gnosisAllowedTokens[2].contractAddress.toLowerCase()
+    ) {
       nonce = await contract._nonces(owner);
-    }else{
+    } else {
       nonce = await contract.nonces(owner);
     }
 
-    console.log(contract.address)
-    
     let version = undefined;
-    try{
+    try {
       version = await contract.version();
-    }catch(e){
-      console.log('No version function in contract.', e)
+    } catch (e) {
+      // console.log('No version function in contract.', e);
     }
 
     let VERSION = undefined;
-    try{
+    try {
       VERSION = await contract.VERSION();
-    }catch(e){
-      console.log('No VERSION function in contract.', e)
+    } catch (e) {
+      // console.log('No VERSION function in contract.', e);
     }
 
     let revision = undefined;
-    try{
+    try {
       revision = await contract.EIP712_REVISION();
-    }catch(e){
-      console.log('No EIP712_REVISION function in contract.', e)
+    } catch (e) {
+      // console.log('No EIP712_REVISION function in contract.', e);
     }
 
-    if(!version && !VERSION && !revision) throw Error("Cannot get permit version from contract.");
+    if (!version && !VERSION && !revision)
+      throw Error('Cannot get permit version from contract.');
 
     const contractName = await contract.name();
     const rightVersion = version ?? VERSION ?? revision;
@@ -61,7 +65,7 @@ const erc20PermitSignature = async (
       chainId: library.network.chainId,
       verifyingContract: contract.address,
     };
-    console.log(domain)
+    // console.log(domain);
     const Permit = [
       { name: 'owner', type: 'address' },
       { name: 'spender', type: 'address' },
@@ -78,7 +82,7 @@ const erc20PermitSignature = async (
       deadline: transactionDeadline,
     };
 
-    console.log(message)
+    // console.log(message);
 
     // eslint-disable-next-line object-shorthand
     const data = JSON.stringify({
@@ -100,7 +104,7 @@ const erc20PermitSignature = async (
       v,
     };
   } catch (e) {
-    console.log('Error getting permit signature: ', e);
+    // console.log('Error getting permit signature: ', e);
     return e;
   }
 };

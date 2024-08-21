@@ -50,7 +50,7 @@ export const CheckRole = () => {
         setRole(USER_ROLE.NO_ROLE)
 
         }catch(err){
-            console.log("Failed to check role: ", err);
+            // console.log("Failed to check role: ", err);
         }
 
     }

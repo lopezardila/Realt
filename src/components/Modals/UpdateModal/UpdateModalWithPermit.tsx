@@ -13,9 +13,12 @@ import { Button, Divider, Flex, Group, Stack, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { ContextModalProps } from '@mantine/modals';
 import { showNotification, updateNotification } from '@mantine/notifications';
+import { AvailableConnectors, ConnectorsDatas } from '@realtoken/realt-commons';
 import { useWeb3React } from '@web3-react/core';
 
 import BigNumber from 'bignumber.js';
+import { ethers } from 'ethers';
+import { useAtomValue } from 'jotai';
 
 import { CoinBridgeToken, Erc20, Erc20ABI, coinBridgeTokenABI } from 'src/abis';
 import { ContractsID, NOTIFICATIONS, NotificationsID } from 'src/constants';
@@ -26,11 +29,8 @@ import { Offer } from 'src/types/offer/Offer';
 import { getContract } from 'src/utils';
 import { cleanNumber } from 'src/utils/number';
 
-import { NumberInput } from '../../NumberInput';
-import { ethers } from 'ethers';
-import { useAtomValue } from 'jotai';
 import { providerAtom } from '../../../states';
-import { AvailableConnectors, ConnectorsDatas } from '@realtoken/realt-commons';
+import { NumberInput } from '../../NumberInput';
 
 type UpdateModalProps = {
   offer: Offer;
@@ -50,10 +50,7 @@ type UpdateFormValues = {
 export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
   context,
   id,
-  innerProps: {
-    offer,
-    triggerTableRefresh,
-  },
+  innerProps: { offer, triggerTableRefresh },
 }) => {
   const { account, provider } = useWeb3React();
   const { getInputProps, onSubmit, reset, setFieldValue, values } =
@@ -101,9 +98,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
   const onHandleSubmit = useCallback(
     async (formValues: UpdateFormValues) => {
       try {
-
-        console.log(formValues)
-
+        // console.log(formValues)
 
         if (
           !account ||
@@ -123,7 +118,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
           account
         );
         if (!offerToken) {
-          console.log('offerToken not found');
+          // console.log('offerToken not found');
           return;
         }
 
@@ -161,7 +156,9 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
           formValues.offerTokenAddress
         );
 
-        const isSafe = connector == ConnectorsDatas.get(AvailableConnectors.gnosisSafe)?.connectorKey;;
+        const isSafe =
+          connector ==
+          ConnectorsDatas.get(AvailableConnectors.gnosisSafe)?.connectorKey;
 
         // APPROVE OR PERMIT
         let signature: any;
@@ -175,7 +172,6 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             offerToken,
             provider
           );
-
         } else if (offerTokenType === 2 && !isSafe) {
           // TokenType = 2: ERC20 With Permit
           signature = await erc20PermitSignature(
@@ -186,7 +182,6 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             offerToken,
             provider
           );
-
         } else if (offerTokenType === 3 || isSafe) {
           // TokenType = 3: ERC20 Without Permit, do Approve/buy
           const approveTx = await offerToken.approve(
@@ -199,7 +194,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             href: `${activeChain?.blockExplorerUrl}tx/${approveTx.hash}`,
             hash: approveTx.hash,
           };
-  
+
           showNotification(
             NOTIFICATIONS[NotificationsID.approveOfferLoading](
               notificationApprove
@@ -219,15 +214,18 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             );
 
           await approveTx.wait(1);
-          
         }
 
-        const price = new BigNumber(formValues.price.toString()).shiftedBy(parseFloat(offer.buyerTokenDecimals)).toString(10);
-        const amountUpdate = BigNumber(formValues.amount).shiftedBy(parseFloat(offer.offerTokenDecimals)).toString(10);
-        
-        let updateTx: ethers.providers.TransactionResponse|undefined = undefined;
-        if (offerTokenType === 1 && !isSafe) {
+        const price = new BigNumber(formValues.price.toString())
+          .shiftedBy(parseFloat(offer.buyerTokenDecimals))
+          .toString(10);
+        const amountUpdate = BigNumber(formValues.amount)
+          .shiftedBy(parseFloat(offer.offerTokenDecimals))
+          .toString(10);
 
+        let updateTx: ethers.providers.TransactionResponse | undefined =
+          undefined;
+        if (offerTokenType === 1 && !isSafe) {
           const { v, r, s } = signature;
 
           updateTx = await realTokenYamUpgradeable.updateOfferWithPermit(
@@ -240,9 +238,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             r,
             s
           );
-
-        }else if(offerTokenType === 2&& !isSafe){
-
+        } else if (offerTokenType === 2 && !isSafe) {
           const { v, r, s } = signature;
 
           updateTx = await realTokenYamUpgradeable.updateOfferWithPermit(
@@ -255,54 +251,60 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
             r,
             s
           );
-
-        }else if(offerTokenType === 3 || isSafe){
+        } else if (offerTokenType === 3 || isSafe) {
           updateTx = await realTokenYamUpgradeable.updateOffer(
             formValues.offerId,
             price,
-            amountUpdate,
+            amountUpdate
           );
         }
 
-        if(updateTx){
-
+        if (updateTx) {
           const notificationPayload = {
             key: updateTx.hash,
             href: `${activeChain?.blockExplorerUrl}tx/${updateTx.hash}`,
             hash: updateTx.hash,
           };
-  
+
           showNotification(
             NOTIFICATIONS[NotificationsID.updateOfferLoading](
               notificationPayload
             )
           );
-  
-          updateTx
-              .wait()
-              .then(({ status }) => {
-                updateNotification(
-                  NOTIFICATIONS[
-                    status === 1
-                      ? NotificationsID.updateOfferSuccess
-                      : NotificationsID.updateOfferError
-                  ](notificationPayload)
-                )
-                if(status == 1){
-                  triggerTableRefresh(true);
-                  onClose();
-                }
-                setSubmitting(false);
-              }
-            );
-        }
 
+          updateTx.wait().then(({ status }) => {
+            updateNotification(
+              NOTIFICATIONS[
+                status === 1
+                  ? NotificationsID.updateOfferSuccess
+                  : NotificationsID.updateOfferError
+              ](notificationPayload)
+            );
+            if (status == 1) {
+              triggerTableRefresh(true);
+              onClose();
+            }
+            setSubmitting(false);
+          });
+        }
       } catch (e) {
         console.error('Error UpdateModal', e);
         setSubmitting(false);
       }
     },
-    [account, provider,connector, realTokenYamUpgradeable, offer.offerTokenAddress, offer.offerId, offer.buyerTokenDecimals, offer.offerTokenDecimals, activeChain?.blockExplorerUrl, triggerTableRefresh, onClose]
+    [
+      account,
+      provider,
+      connector,
+      realTokenYamUpgradeable,
+      offer.offerTokenAddress,
+      offer.offerId,
+      offer.buyerTokenDecimals,
+      offer.offerTokenDecimals,
+      activeChain?.blockExplorerUrl,
+      triggerTableRefresh,
+      onClose,
+    ]
   );
 
   const [offerTokenSymbol, setOfferTokenSymbol] = useState<string | undefined>(
@@ -328,7 +330,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
       const tokenSymbol = await offerToken?.symbol();
       setOfferTokenSymbol(tokenSymbol);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
     }
   };
   useEffect(() => {
@@ -341,7 +343,7 @@ export const UpdateModalWithPermit: FC<ContextModalProps<UpdateModalProps>> = ({
       const tokenSymbol = await buyerToken?.symbol();
       setBuyTokenSymbol(tokenSymbol);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
     }
   };
   useEffect(() => {

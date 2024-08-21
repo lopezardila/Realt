@@ -245,8 +245,6 @@ const getTokens = (
 
   return propertiesNonFiltered;
 
-  console.log(propertiesNonFiltered);
-
   const onlyWLProperties = propertiesNonFiltered.filter(
     (property) =>
       !!wlProperties.find(
@@ -282,7 +280,6 @@ const handler: NextApiHandler = async (
       .status(200)
       .json(tokens);
   } catch (err) {
-    console.log(err);
     return res.status(500).json({ error: 'Failed to fetch properties' });
   }
 };
